@@ -15,6 +15,14 @@ TRUNCATE TABLE geostandardise_src.rvt_national CONTINUE IDENTITY CASCADE;
 TRUNCATE TABLE geostandardise_src.trafic_national CONTINUE IDENTITY CASCADE;
 TRUNCATE TABLE geostandardise_src.vts_national CONTINUE IDENTITY CASCADE;
 
+--mise a jour de l'identifiant unique apres import par departement
+ALTER TABLE geostandardise_src.troncon_national ADD COLUMN id_uniq_w SERIAL ;
+ALTER TABLE geostandardise_src.allure_national ADD COLUMN id_uniq_w SERIAL ;
+ALTER TABLE geostandardise_src.route_national ADD COLUMN id_uniq_w SERIAL ;
+ALTER TABLE geostandardise_src.rvt_national ADD COLUMN id_uniq_w SERIAL ;
+ALTER TABLE geostandardise_src.trafic_national ADD COLUMN id_uniq_w SERIAL ;
+ALTER TABLE geostandardise_src.vts_national ADD COLUMN id_uniq_w SERIAL ;
+
 --pour les test on a besoin d'une bdd tres permissive en geometrie
 ALTER TABLE geostandardise_src.troncon_national ALTER COLUMN geom TYPE geometry
 
@@ -59,20 +67,20 @@ SELECT idtroncon
  FROM (SELECT codedept, idtroncon, idsource, geom, count(idtroncon) over(PARTITION BY idtroncon) nb_idtroncon
        FROM geostandardise_src.troncon_national
        ORDER BY idtroncon) t 
- WHERE t.nb_idtroncon>=2
+ WHERE t.nb_idtroncon>=2 AND id_troncon IS NOT null
 --pour la suite du taf je supprime arbitrairement des données en doubons dans le 39, mais c'est a surveiller (la requete à supprimer original + doublons, attention, il faudrait remlpacer le 
 -- idtroncon de la clause where par ogcfid)
-DELETE FROM geostandardise_src.troncon_national WHERE idtroncon IN (SELECT idtroncon
- FROM (SELECT codedept, idtroncon, idsource, geom, ROW_NUMBER() over(PARTITION BY idtroncon) nb_idtroncon
+DELETE FROM geostandardise_src.troncon_national WHERE id_uniq_w IN (SELECT id_uniq_w,idtroncon, nb_idtroncon
+ FROM (SELECT id_uniq_w, codedept, idtroncon, idsource, geom, ROW_NUMBER() over(PARTITION BY idtroncon) nb_idtroncon
        FROM geostandardise_src.troncon_national
        ORDER BY idtroncon) t 
- WHERE t.nb_idtroncon>=2)
+ WHERE t.nb_idtroncon>=2 AND t.idtroncon IS NOT null)
 --idem pour les tables trafic, allure, rvt, vts
-DELETE FROM geostandardise_src.trafic_national WHERE idtroncon IN (SELECT idtroncon
- FROM (SELECT codedept, idtroncon, ROW_NUMBER() over(PARTITION BY idtroncon) nb_idtroncon
+DELETE FROM geostandardise_src.trafic_national WHERE id_uniq_w IN (SELECT id_uniq_w
+ FROM (SELECT id_uniq_w, codedept, idtroncon, ROW_NUMBER() over(PARTITION BY idtroncon) nb_idtroncon
        FROM geostandardise_src.trafic_national
        ORDER BY idtroncon) t 
- WHERE t.nb_idtroncon>=2)
+ WHERE t.nb_idtroncon>=2 AND t.idtroncon IS NOT null)
  
 --test sur les valeurs null de idtroncon 
 select DISTINCT (codedept) FROM geostandardise_src.troncon_national WHERE idtroncon IS NULL
