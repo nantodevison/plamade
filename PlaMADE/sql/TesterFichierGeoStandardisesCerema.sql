@@ -29,6 +29,8 @@ ALTER TABLE geostandardise_src.troncon_national ALTER COLUMN geom TYPE geometry
 --tester l'import dans la table troncon
 SELECT * FROM geostandardise_src.troncon_national WHERE codedept='035' LIMIT 1
 
+SELECT * FROM geostandardise_src.trafic_national WHERE codedept='048' LIMIT 1
+
 --tests sur les SRID par departement
 SELECT DISTINCT codedept, st_srid(geom) 
  FROM geostandardise_src.troncon_national
@@ -143,7 +145,24 @@ UPDATE geostandardise_src.troncon_national
 SELECT * FROM geostandardise_src.trafic_national WHERE codedept IN ('056', '029', '022', '035')
 
 DELETE FROM geostandardise_src.route_national  WHERE codedept IS NULL --IN ('056', '029', '022', '035')
+
+
+/* -----------------------
+ * IdF
+ ------------------------*/
  
+--pour export et tests attributs
+SELECT pk, geom, id, prec_plani, prec_alti, nature, numero, nom_voie_g, nom_voie_d, importance, cl_admin, largeur, nom_iti, nb_voies, pos_sol, sens, alias_g, alias_d, inseecom_g, inseecom_d, codevoie_g, codevoie_d, codepost_g, codepost_d, typ_adres, bornedeb_g, bornedeb_d, bornefin_g, bornefin_d, etat, z_ini, z_fin, cat, modelcete, gi, agglo, s_trafic, an_trafic, s_vites, s_pl, tmja, q_vl_d, q_vl_e, q_vl_n, q_pl_d, q_pl_e, q_pl_n, v_vl_d, v_vl_e, v_vl_n, v_pl_d, v_pl_e, v_pl_n, allure, s_allure, enrobe, s_enrobe, bd_topo, "admin", vpkwd, vpkwe, vpkwn, vlkwd, vlkwe, vlkwn, mt, me, mn, pt, pe, pn, flownr, stronr, vu, rq
+FROM donnees_sources.bruitparif
+LIMIT 100
+
+SELECT DISTINCT bd_topo 
+ FROM donnees_sources.bruitparif
+ 
+--test sur les vitesses
+SELECT * 
+FROM donnees_sources.bruitparif
+WHERE v_pl_d != vlkwd AND v_pl_d !=0 AND vlkwd!=0
 
  
  
