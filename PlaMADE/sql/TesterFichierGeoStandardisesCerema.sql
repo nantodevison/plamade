@@ -3,6 +3,13 @@
  * vien en complementdu notebook 'Outils' dans C:\Users\martin.schoreisz\git\PlaMADE\PlaMADE\src
  */
 
+/* =============
+ * ISIDOR
+ ============= */
+SELECT distinct tmja, tmja1, pctpl, anneemesuretrafic, pointcomptage
+ FROM donnees_sources.isidor_2018
+
+
 --test bdtopo juin 2019 3D
 SELECT * FROM public.bdtopo_juin2019_charente LIMIT 1
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! La version mise a disposition des opérateurs est en 2D !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -27,7 +34,7 @@ ALTER TABLE geostandardise_src.vts_national ADD COLUMN id_uniq_w SERIAL ;
 ALTER TABLE geostandardise_src.troncon_national ALTER COLUMN geom TYPE geometry
 
 --tester l'import dans la table troncon
-SELECT * FROM geostandardise_src.troncon_national WHERE codedept='035' LIMIT 1
+SELECT count(*) FROM geostandardise_src.troncon_national WHERE codedept in ('075', '077', '078', '091', '092', '093', '094', '095')
 
 SELECT * FROM geostandardise_src.trafic_national WHERE codedept='048' LIMIT 1
 
@@ -109,12 +116,19 @@ SELECT *
  WHERE tronc.idtroncon IS NULL
  
 --creer les vues avec les infos principale
-CREATE OR REPLACE VIEW geostandardise_src.vue_trafic AS 
-SELECT tn.idtroncon, tn. codedept, tn. idroute, tn. nomrueg, tn. nomrued, tn. refsource, tn. millsource, tn. idsource, tn. cbs_gitt, tn. geom, tn. listgest
-       , tn2."comment", tn2.source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation 
-  FROM geostandardise_src.troncon_national tn JOIN (SELECT tn2.idtroncon, tn2."comment", e.nom source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation 
+DROP TABLE IF EXISTS geostandardise_src.vue_attr_principaux ;
+CREATE table geostandardise_src.vue_attr_principaux AS 
+SELECT tn.idtroncon, tn. codedept, tn. idroute, tn. nomrueg, tn. nomrued, tn. refsource, tn. millsource, tn. idsource, tn. cbs_gitt, st_setSrid(st_multi(tn.geom), 2154)::geometry('Multilinestring', 2154) geom, tn. listgest
+       , tn2."comment", tn2.source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation, 
+       rn.nomroute,rn.nomgest,rn.refgest,rn.concession,rn.cladmin,rn.itineurope,rn.catinfra, vn.sourcevit,vn.vitessevl,vn.vitessepl,
+       rn2.revetement,rn2.classacou,rn2.anneepose 
+ FROM geostandardise_src.troncon_national tn JOIN (SELECT tn2.idtroncon, tn2."comment", e.nom source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation 
                                                             FROM geostandardise_src.trafic_national tn2 LEFT JOIN geostandardise_src.enum_source_trafic e 
                                                             ON (tn2.sourcevl=e.code) ) tn2 ON tn.idtroncon=tn2.idtroncon
+                                              JOIN geostandardise_src.route_national rn ON tn.idroute=rn.idroute
+                                              JOIN geostandardise_src.vts_national vn ON tn.idtroncon=vn.idtroncon
+                                              JOIN geostandardise_src.rvt_national rn2 ON tn.idtroncon=rn2.idtroncon
+                                              
   
 select * from geostandardise_src.vue_trafic where codedept in ('029', '022', '035', '056')
                                                             
@@ -130,7 +144,7 @@ INSERT INTO geostandardise_src.enum_source_trafic VALUES ('00', 'non renseigne')
  ===================================================================================================================================================== */
 
 /* ----------------
- * Bretagne
+ * Bretagne : A reprendre completement
  ------------------ */
  
  --vérif sur les x/y : on est bien sur du 4326, donc on les passe en 2154
@@ -148,8 +162,22 @@ DELETE FROM geostandardise_src.route_national  WHERE codedept IS NULL --IN ('056
 
 
 /* -----------------------
- * IdF
+ * IdF : seul 77 et 95 ok, a reprendre completement
  ------------------------*/
+
+--test des jointures
+SELECT tn.idtroncon 
+ FROM geostandardise_src.troncon_national tn left join geostandardise_src.allure_national al on tn.idtroncon=al.idtroncon
+                                             LEFT join  geostandardise_src.rvt_national rn on tn.idtroncon=rn.idtroncon
+                                             LEFT join  geostandardise_src.trafic_national tn3 on tn.idtroncon=tn3.idtroncon
+                                             LEFT join  geostandardise_src.vts_national vn ON  tn.idtroncon=vn.idtroncon
+                                             LEFT join  geostandardise_src.route_national rtn on tn.idroute=rtn.idroute
+WHERE al.idtroncon IS NULL OR rn.idtroncon IS NULL OR tn3.idtroncon IS NULL OR vn.idtroncon IS NULL OR rtn.idroute IS null  
+                                    
+
+SELECT * 
+ FROM geostandardise_src.troncon_national tn
+ WHERE codedept is null
  
 --pour export et tests attributs
 SELECT pk, geom, id, prec_plani, prec_alti, nature, numero, nom_voie_g, nom_voie_d, importance, cl_admin, largeur, nom_iti, nb_voies, pos_sol, sens, alias_g, alias_d, inseecom_g, inseecom_d, codevoie_g, codevoie_d, codepost_g, codepost_d, typ_adres, bornedeb_g, bornedeb_d, bornefin_g, bornefin_d, etat, z_ini, z_fin, cat, modelcete, gi, agglo, s_trafic, an_trafic, s_vites, s_pl, tmja, q_vl_d, q_vl_e, q_vl_n, q_pl_d, q_pl_e, q_pl_n, v_vl_d, v_vl_e, v_vl_n, v_pl_d, v_pl_e, v_pl_n, allure, s_allure, enrobe, s_enrobe, bd_topo, "admin", vpkwd, vpkwe, vpkwn, vlkwd, vlkwe, vlkwn, mt, me, mn, pt, pe, pn, flownr, stronr, vu, rq
@@ -160,9 +188,39 @@ SELECT DISTINCT bd_topo
  FROM donnees_sources.bruitparif
  
 --test sur les vitesses
-SELECT * 
+SELECT count(*)
 FROM donnees_sources.bruitparif
-WHERE v_pl_d != vlkwd AND v_pl_d !=0 AND vlkwd!=0
+WHERE v_pl_d != vlkwd AND v_pl_d !=0 AND vlkwd!=0 AND tmja>8200
+
+
+SELECT count(*)
+FROM donnees_sources.bruitparif
+WHERE v_pl_d =0 AND vlkwd=0 AND tmja > 4000
+
+SELECT count(*)
+FROM donnees_sources.bruitparif
+WHERE tmja > 4000
+
+
+
+
+
+/* --------------------
+ * PACA
+ ---------------------- */
+ 
+ --test sur les trafics du 06
+ drop table if exists test_dept.trafic_013 ;
+ CREATE table test_dept.trafic_013 AS 
+ SELECT tn.idtroncon, tn. codedept, tn. idroute, tn. nomrueg, tn. nomrued, tn. refsource, tn. millsource, tn. idsource, tn. cbs_gitt, st_setsrid(tn.geom, 2154), tn. listgest
+       , tn2."comment", tn2.source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation 
+  FROM geostandardise_src.troncon_national tn JOIN (SELECT tn2.idtroncon, tn2."comment", e.nom source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation 
+                                                            FROM geostandardise_src.trafic_national tn2 LEFT JOIN geostandardise_src.enum_source_trafic e 
+                                                            ON (tn2.sourcevl=e.code) ) tn2 ON tn.idtroncon=tn2.idtroncon
+ WHERE tn.codedept='013' AND tn2.tmjavlt>0 ;
+ ALTER TABLE test_dept.trafic_013 ADD PRIMARY KEY (idtroncon) ;
+
+
 
  
  
