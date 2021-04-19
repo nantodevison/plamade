@@ -36,7 +36,7 @@ ALTER TABLE geostandardise_src.troncon_national ALTER COLUMN geom TYPE geometry
 --tester l'import dans la table troncon
 SELECT count(*) FROM geostandardise_src.troncon_national WHERE codedept in ('075', '077', '078', '091', '092', '093', '094', '095')
 
-SELECT * FROM geostandardise_src.trafic_national WHERE codedept='048' LIMIT 1
+SELECT * FROM geostandardise_src.trafic_national WHERE codedept='001' LIMIT 1
 
 --tests sur les SRID par departement
 SELECT DISTINCT codedept, st_srid(geom) 
@@ -128,6 +128,8 @@ SELECT tn.idtroncon, tn. codedept, tn. idroute, tn. nomrueg, tn. nomrued, tn. re
                                               JOIN geostandardise_src.route_national rn ON tn.idroute=rn.idroute
                                               JOIN geostandardise_src.vts_national vn ON tn.idtroncon=vn.idtroncon
                                               JOIN geostandardise_src.rvt_national rn2 ON tn.idtroncon=rn2.idtroncon
+WHERE tn.codedept IN ('004','005','006','083','084','013','009')
+
                                               
   
 select * from geostandardise_src.vue_trafic where codedept in ('029', '022', '035', '056')
@@ -201,6 +203,9 @@ SELECT count(*)
 FROM donnees_sources.bruitparif
 WHERE tmja > 4000
 
+SELECT DISTINCT continuite, conti_calc 
+ FROM isidor_2018_modifie_idf_simple imis
+
 
 
 
@@ -209,16 +214,10 @@ WHERE tmja > 4000
  * PACA
  ---------------------- */
  
- --test sur les trafics du 06
- drop table if exists test_dept.trafic_013 ;
- CREATE table test_dept.trafic_013 AS 
- SELECT tn.idtroncon, tn. codedept, tn. idroute, tn. nomrueg, tn. nomrued, tn. refsource, tn. millsource, tn. idsource, tn. cbs_gitt, st_setsrid(tn.geom, 2154), tn. listgest
-       , tn2."comment", tn2.source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation 
-  FROM geostandardise_src.troncon_national tn JOIN (SELECT tn2.idtroncon, tn2."comment", e.nom source_trafic, tn2. pcentpl, tn2. tmjavlt, tn2. tmjaplt, tn2. debitsatac, tn2. saturation 
-                                                            FROM geostandardise_src.trafic_national tn2 LEFT JOIN geostandardise_src.enum_source_trafic e 
-                                                            ON (tn2.sourcevl=e.code) ) tn2 ON tn.idtroncon=tn2.idtroncon
- WHERE tn.codedept='013' AND tn2.tmjavlt>0 ;
- ALTER TABLE test_dept.trafic_013 ADD PRIMARY KEY (idtroncon) ;
+--test sur les sources de données
+SELECT DISTINCT source_trafic, codedept
+ FROM geostandardise_src.vue_attr_principaux
+ WHERE codedept='050'
 
 
 
